@@ -23,7 +23,7 @@ public class YASUO extends AdvancedRobot {
             execute(); // Executa ações pendentes
             turnRight(90); // Gira 90 graus para a direita
             execute(); // Executa ações pendentes
-			turnGunRight(3);
+			turnGunRight(30);
 			execute();
         }
     }
