@@ -1,83 +1,130 @@
 package Lol;
 
+import robocode.HitRobotEvent;
+import robocode.Robot;
+import robocode.ScannedRobotEvent;
+import robocode.HitByBulletEvent;
 import robocode.*;
-import java.awt.Color;
+import java.awt.*;
 
-public class YASUO extends AdvancedRobot {
+public class YASUO extends Robot{
+	
 
-    boolean movingForward;
-    boolean scanningForEnemies;
+   public void run() {
+	  //Definem as cores do robô	
+      setBodyColor(Color.black);
+	  setGunColor(Color.black);
+	  setRadarColor(Color.red);
+	  setScanColor(Color.red);
+	  setBulletColor(Color.white);
 
-    public void run() {
-        setColors(Color.black, Color.black, Color.white, Color.white, Color.magenta);
-        setAdjustGunForRobotTurn(true);
-        setAdjustRadarForGunTurn(true);
-        setAdjustRadarForRobotTurn(true);
+ 
+	  while(true){	
+	     turnRadarRight(360);
+	     ahead(100);
+	     turnGunRight(360);
+	     back(100);
+       	 
 
-        // Inicia o radar
-        scanningForEnemies = true;
-        setTurnRadarRight(Double.POSITIVE_INFINITY);
+	  }
 
-        while (true) {
-            moveAndTurn(); // Movimenta e vira
-            execute();
-        }
+   }
+
+
+   //Detecta os outros robôs
+   public void onScannedRobot(ScannedRobotEvent e) {
+      double max = 100;
+	 
+	
+	  //Faz um controle da energia que é gasta no que diz 
+	  //respeito à potência do tiro
+      if(e.getEnergy() < max){
+         max = e.getEnergy();
+         miraCanhao(e.getBearing(), max, getEnergy());
+      }else if(e.getEnergy() >= max){
+         max = e.getEnergy();
+         miraCanhao(e.getBearing(), max, getEnergy());
+      }else if(getOthers() == 1){
+         max = e.getEnergy();
+         miraCanhao(e.getBearing(), max, getEnergy());
+      }
     }
 
-    private void moveAndTurn() {
-        setAhead(40000);
-        movingForward = true;
-        turnRight(90);
-    }
-
-    public void onScannedRobot(ScannedRobotEvent e) {
-        // Mira e dispara
-        double absoluteBearing = getHeadingRadians() + e.getBearingRadians();
-        double bearingFromGun = robocode.util.Utils.normalRelativeAngle(absoluteBearing - getGunHeadingRadians());
-
-        setTurnGunRightRadians(bearingFromGun);
-        if (Math.abs(bearingFromGun) <= 0.05 && getGunHeat() == 0 && getEnergy() > 1) {
-            fire(Math.min(3.0, getEnergy() - 0.1));
-        }
-
-        // Ajusta o radar para o alvo atual
-        double radarTurn = absoluteBearing - getRadarHeadingRadians();
-        setTurnRadarRightRadians(2.0 * robocode.util.Utils.normalRelativeAngle(radarTurn));
-
-        execute();
-    }
-
-    public void onHitWall(HitWallEvent e) {
-        // Lida com colisões com as paredes
-        if (movingForward) {
-            setBack(100);
-            movingForward = false;
-        } else {
-            setAhead(100);
-            movingForward = true;
-        }
-        execute();
-    }
-
+    //quando o seu robo colide com outro robo
     public void onHitRobot(HitRobotEvent e) {
-        // Evita colisões com outros robôs
-        if (e.isMyFault()) {
-            if (movingForward) {
-                setBack(100);
-                movingForward = false;
-            } else {
-                setAhead(100);
-                movingForward = true;
-            }
-        }
-        execute();
+	   tiroFatal(e.getBearing(), e.getEnergy(), getEnergy());	
+	
     }
 
-    public void onRobotDeath(RobotDeathEvent e) {
-        // Se o alvo atual morreu, comece a procurar por outro
-        if (e.getName().equals(getName())) {
-            scanningForEnemies = true;
-            setTurnRadarRight(Double.POSITIVE_INFINITY);
-        }
+
+    //Quando seu roboô leva um tiro
+    public void onHitByBullet(HitByBulletEvent e) { 
+	   turnLeft(90);
+	   back(100); 
     }
+
+    //Fornece as coordenadas para o ajuste do canhão.
+    public void miraCanhao(double PosIni, double energiaIni, double minhaEnergia) {
+
+       double Distancia = PosIni;
+	   double Coordenadas = getHeading() + PosIni - getGunHeading();
+	   double PontoQuarenta = (energiaIni / 4) + .1;
+
+	   if (!(Coordenadas > -180 && Coordenadas <= 180)) {
+	      while (Coordenadas <= -180) {
+		     Coordenadas += 360;
+		  }
+		  while (Coordenadas > 180) {
+		     Coordenadas -= 360;
+		  }
+	   }
+
+	   turnGunRight(Coordenadas);
+
+		
+	   if (Distancia > 200 || minhaEnergia < 15 || energiaIni > minhaEnergia){
+          fire(1);
+       } else if (Distancia > 50 ) {
+          fire(2);
+       } else {
+          fire(PontoQuarenta);
+       }
+
+
+   }
+
+   //É chamado quando o robô bate na parede,
+   public void onHitWall(HitWallEvent e) {
+      turnLeft(90);
+      ahead(200);
+   }
+
+
+   //Dança da vitória
+   public void onWin(WinEvent e) {	
+      turnRight(72000);
+   }
+
+   public void tiroFatal(double PosIni, double energiaIni, double minhaEnergia) {
+
+      double Distancia = PosIni;
+	  double Coordenadas = getHeading() + PosIni - getGunHeading();
+	  double PontoQuarenta = (energiaIni / 4) + .1;
+
+	  if (!(Coordenadas > -180 && Coordenadas <= 180)) {
+	     while (Coordenadas <= -180) {
+	        Coordenadas += 360;
+		 }
+		 while (Coordenadas > 180) {
+	        Coordenadas -= 360;
+	     }
+	  }
+
+	  turnGunRight(Coordenadas);
+	  fire(PontoQuarenta);
+       
+   }
+			
+
 }
+ 
